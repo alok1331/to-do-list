@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>To-Do List & Reminder</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-image: url('https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=1400&q=80');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+    }
+    .bg-overlay {
+      background-color: rgba(255, 255, 255, 0.85);
+    }
+  </style>
+</head>
+<body class="text-gray-900">
+  <div class="min-h-screen flex flex-col items-center justify-center p-4">
+    <div class="bg-overlay rounded-2xl shadow-xl p-6 w-full max-w-xl">
+      <h1 class="text-3xl font-bold mb-2 text-center">📝 To-Do List & Reminder</h1>
+      <p class="text-center text-blue-600 font-semibold mb-4">"One small task today is one step closer to your dreams."</p>
+
+      <div class="flex flex-col md:flex-row gap-2 mb-4">
+        <input type="text" id="taskInput" placeholder="Add a new task..." class="flex-1 p-2 border rounded">
+        <input type="datetime-local" id="reminderTime" class="p-2 border rounded">
+        <button onclick="addTask()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Add</button>
+      </div>
+
+      <ul id="taskList" class="space-y-2"></ul>
+    </div>
+  </div>
+
+  <script>
+    const taskList = document.getElementById('taskList');
+
+    function addTask() {
+      const taskText = document.getElementById('taskInput').value;
+      const reminderTime = document.getElementById('reminderTime').value;
+
+      if (!taskText) return;
+
+      const li = document.createElement('li');
+      li.className = "flex justify-between items-center bg-gray-100 p-2 rounded shadow flex-wrap";
+
+      const taskInfo = document.createElement('div');
+      taskInfo.innerHTML = `<strong>${taskText}</strong><br><small>${reminderTime ? new Date(reminderTime).toLocaleString() : ''}</small>`;
+
+      const timer = document.createElement('div');
+      timer.className = "text-sm text-gray-600 mt-1";
+
+      const btnGroup = document.createElement('div');
+      btnGroup.className = "flex items-center";
+
+      const doneBtn = document.createElement('button');
+      doneBtn.innerHTML = '✔️';
+      doneBtn.className = "text-green-600 mx-1 hover:scale-110";
+      doneBtn.onclick = () => li.style.textDecoration = "line-through";
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.innerHTML = '❌';
+      deleteBtn.className = "text-red-600 mx-1 hover:scale-110";
+      deleteBtn.onclick = () => li.remove();
+
+      btnGroup.appendChild(doneBtn);
+      btnGroup.appendChild(deleteBtn);
+
+      li.appendChild(taskInfo);
+      li.appendChild(timer);
+      li.appendChild(btnGroup);
+      taskList.appendChild(li);
+
+      if (reminderTime) {
+        const reminderDate = new Date(reminderTime);
+        const updateTimer = () => {
+          const now = new Date();
+          const diff = reminderDate - now;
+          if (diff > 0) {
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            timer.textContent = `⏳ Time left: ${hours}h ${minutes}m ${seconds}s`;
+          } else {
+            timer.textContent = "🔔 Reminder time reached!";
+            clearInterval(interval);
+          }
+        };
+        updateTimer();
+        const interval = setInterval(updateTimer, 1000);
+
+        const delay = reminderDate.getTime() - Date.now();
+        if (delay > 0) {
+          setTimeout(() => {
+            if (Notification.permission === "granted") {
+              new Notification("Reminder", {
+                body: taskText,
+              });
+            } else if (Notification.permission !== "denied") {
+              Notification.requestPermission().then(permission => {
+                if (permission === "granted") {
+                  new Notification("Reminder", {
+                    body: taskText,
+                  });
+                }
+              });
+            } else {
+              alert(`Reminder: ${taskText}`);
+            }
+          }, delay);
+        }
+      }
+
+      document.getElementById('taskInput').value = '';
+      document.getElementById('reminderTime').value = '';
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      if ("Notification" in window) {
+        Notification.requestPermission();
+      }
+    });
+  </script>
+</body>
+</html>
